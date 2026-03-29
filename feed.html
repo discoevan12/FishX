@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>The Dock — FishX Feed</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="FishX"/>
+    <span class="nav-logo-text">FISH<span>X</span></span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="feed.html">Feed</a>
+    <a class="nav-link" href="market.html">Market</a>
+    <a class="nav-link" href="sell.html">Sell</a>
+    <a class="nav-link" href="messages.html">Messages</a>
+  </div>
+  <div class="nav-right">
+    <a href="profile.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <img class="nav-avatar" id="navAvatar" src="assets/logo.png" alt="avatar" style="display:none;"/>
+      <span class="nav-username" id="navUsername"></span>
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="container">
+
+    <!-- Header -->
+    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h2>THE DOCK <span class="text-blue">— LATEST CATCHES</span></h2>
+        <p class="text-muted">See what fishers are reeling in right now</p>
+      </div>
+      <a href="sell.html" class="btn btn-primary">Share a Catch</a>
+    </div>
+
+    <!-- Feed grid -->
+    <div class="grid-4" id="feedGrid">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="spinner" style="margin:0 auto 16px;"></div>
+        <p>Casting the net…</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="js/shared.js"></script>
+<script>
+  requireAuth(initFeed);
+
+  function initFeed(user) {
+    const grid = document.getElementById("feedGrid");
+
+    const ref = db.ref("feed").orderByChild("createdAt").limitToLast(40);
+
+    ref.on("value", snap => {
+      grid.innerHTML = "";
+      const items = [];
+      snap.forEach(c => items.push({ key: c.key, ...c.val() }));
+      items.reverse();
+
+      if (!items.length) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <span class="empty-state-icon">🌊</span>
+            <p>The dock is quiet — be the first to share a catch!</p>
+            <a href="sell.html" class="btn btn-primary mt-4">List Your First Catch</a>
+          </div>`;
+        return;
+      }
+
+      items.forEach((item, i) => {
+        const card = buildFishCard(item.key, item, { showLike: true });
+        card.style.animationDelay = `${i * 0.05}s`;
+        grid.appendChild(card);
+      });
+
+      // Bind like buttons
+      grid.querySelectorAll(".like-btn").forEach(btn => {
+        btn.addEventListener("click", () => toggleLike(btn.dataset.key, btn.classList.contains("liked")));
+      });
+    });
+  }
+
+  async function toggleLike(key, isLiked) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const ref = db.ref(`feed/${key}/likes/${user.uid}`);
+    if (isLiked) await ref.remove();
+    else await ref.set(true);
+  }
+</script>
+</body>
+</html>

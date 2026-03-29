@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Market — FishX</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="FishX"/>
+    <span class="nav-logo-text">FISH<span>X</span></span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link active" href="market.html">Market</a>
+    <a class="nav-link" href="sell.html">Sell</a>
+    <a class="nav-link" href="messages.html">Messages</a>
+  </div>
+  <div class="nav-right">
+    <a href="profile.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <img class="nav-avatar" id="navAvatar" src="" alt="avatar" style="display:none;"/>
+      <span class="nav-username" id="navUsername"></span>
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="container">
+    <div class="page-header" style="display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+      <div>
+        <h2>MARKET <span class="text-blue">— LIVE LISTINGS</span></h2>
+        <p class="text-muted">Buy now or place a bid on rare catches</p>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="filter-tabs" id="filterTabs">
+          <button class="filter-tab active" data-filter="all">All</button>
+          <button class="filter-tab" data-filter="flat">Buy Now</button>
+          <button class="filter-tab" data-filter="auction">Auctions</button>
+        </div>
+        <a href="sell.html" class="btn btn-primary btn-sm">List a Catch</a>
+      </div>
+    </div>
+    <div class="grid-3" id="marketGrid">
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="spinner" style="margin:0 auto 16px;"></div>
+        <p>Loading listings…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bid Modal -->
+<div class="modal-overlay hidden" id="bidModal">
+  <div class="modal-box">
+    <h3 class="modal-title">Place a Bid</h3>
+    <p class="modal-sub" id="bidModalName">—</p>
+    <p style="margin-bottom:16px;font-size:0.9rem;">Current bid: <strong id="bidModalCurrent" style="color:var(--green);font-family:monospace;">—</strong></p>
+    <div class="form-group">
+      <label class="form-label">Your Bid (USD)</label>
+      <input class="form-input" id="bidInput" type="number" min="0" step="0.01" placeholder="Enter amount…"/>
+    </div>
+    <div id="buyoutRow" style="display:none;margin-bottom:16px;padding:12px;background:var(--gray-800);border-radius:var(--r-md);border:1px solid rgba(245,158,11,0.3);">
+      <p style="font-size:0.85rem;color:var(--gold);margin-bottom:8px;">Buyout available: <strong id="buyoutAmountDisplay">—</strong></p>
+      <button class="btn btn-outline btn-sm" id="buyoutConfirm" style="border-color:var(--gold);color:var(--gold);">Buy Out Now</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;">
+      <button class="btn btn-ghost" id="bidCancel" style="flex:1;">Cancel</button>
+      <button class="btn btn-primary" id="bidConfirm" style="flex:2;">Confirm Bid</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<style>
+.filter-tabs { display:flex; gap:4px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:4px; }
+.filter-tab { padding:6px 16px; border-radius:var(--r-sm); font-size:0.82rem; font-weight:600; color:var(--text-dim); transition:all 0.15s; }
+.filter-tab.active { background:var(--blue); color:#fff; }
+.filter-tab:hover:not(.active) { color:var(--white); background:rgba(255,255,255,0.07); }
+</style>
+
+<script src="js/shared.js"></script>
+<script>
+  let allListings = [];
+  let activeFilter = "all";
+  let activeBidKey = null;
+  let activeBidItem = null;
+
+  requireAuth(initMarket);
+
+  function initMarket(user) {
+    db.ref("listings").orderByChild("createdAt").limitToLast(60).on("value", snap => {
+      allListings = [];
+      snap.forEach(c => {
+        const val = c.val();
+        if (!val.sold) allListings.push({ key: c.key, ...val });
+      });
+      allListings.reverse();
+      renderGrid(user);
+    });
+
+    document.getElementById("filterTabs").querySelectorAll(".filter-tab").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".filter-tab").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        activeFilter = btn.dataset.filter;
+        renderGrid(user);
+      });
+    });
+
+    document.getElementById("bidCancel").addEventListener("click", closeBidModal);
+    document.getElementById("bidModal").addEventListener("click", e => { if (e.target.id === "bidModal") closeBidModal(); });
+    document.getElementById("bidConfirm").addEventListener("click", () => confirmBid(user));
+    document.getElementById("buyoutConfirm").addEventListener("click", () => confirmBuyout(user));
+  }
+
+  function renderGrid(user) {
+    const grid = document.getElementById("marketGrid");
+    grid.innerHTML = "";
+    const filtered = activeFilter === "all" ? allListings : allListings.filter(l => l.type === activeFilter);
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="empty-state"><span class="empty-state-icon">&#127907;</span><p>No listings yet. Be the first to sell!</p><a href="sell.html" class="btn btn-primary mt-4">List a Catch</a></div>`;
+      return;
+    }
+    filtered.forEach((item, i) => {
+      const card = buildFishCard(item.key, item, { showBuy: true, showBid: true, showLike: true });
+      card.style.animationDelay = `${i * 0.04}s`;
+      grid.appendChild(card);
+    });
+    grid.querySelectorAll(".buy-btn").forEach(btn => btn.addEventListener("click", () => handleBuy(btn.dataset.key, user)));
+    grid.querySelectorAll(".bid-btn").forEach(btn => btn.addEventListener("click", () => openBidModal(btn.dataset.key)));
+    grid.querySelectorAll(".buyout-btn").forEach(btn => btn.addEventListener("click", () => openBidModal(btn.dataset.key, true)));
+    grid.querySelectorAll(".like-btn").forEach(btn => {
+      btn.addEventListener("click", () => toggleLike(btn.dataset.key, btn.classList.contains("liked"), user));
+    });
+  }
+
+  async function toggleLike(key, isLiked, user) {
+    if (!user) return;
+    const ref = db.ref(`listings/${key}/likes/${user.uid}`);
+    if (isLiked) await ref.remove();
+    else await ref.set(true);
+  }
+
+  async function handleBuy(key, user) {
+    const item = allListings.find(l => l.key === key);
+    if (!item) return;
+    if (item.sellerId === user.uid) { toast("You can't buy your own listing!", "error"); return; }
+    await db.ref(`listings/${key}`).update({ sold: true, buyerId: user.uid, buyerName: user.displayName, soldAt: firebase.database.ServerValue.TIMESTAMP });
+    await createConversation(key, item, user);
+    toast(`Purchased "${item.title}"! Message the seller in your profile.`, "success");
+  }
+
+  function openBidModal(key, scrollToBuyout = false) {
+    const item = allListings.find(l => l.key === key);
+    if (!item) return;
+    activeBidKey = key;
+    activeBidItem = item;
+    document.getElementById("bidModalName").textContent    = item.title;
+    document.getElementById("bidModalCurrent").textContent = usd(item.currentBid || item.startBid || 0);
+    document.getElementById("bidInput").value = "";
+    const buyoutRow = document.getElementById("buyoutRow");
+    if (item.buyoutPrice) {
+      buyoutRow.style.display = "block";
+      document.getElementById("buyoutAmountDisplay").textContent = usd(item.buyoutPrice);
+    } else {
+      buyoutRow.style.display = "none";
+    }
+    document.getElementById("bidModal").classList.remove("hidden");
+  }
+
+  function closeBidModal() {
+    document.getElementById("bidModal").classList.add("hidden");
+    activeBidKey = activeBidItem = null;
+  }
+
+  async function confirmBid(user) {
+    const bid  = parseFloat(document.getElementById("bidInput").value);
+    const min  = (activeBidItem.currentBid || activeBidItem.startBid || 0) + 0.01;
+    if (isNaN(bid) || bid < min) { toast(`Bid must be at least ${usd(min)}`, "error"); return; }
+    if (activeBidItem.sellerId === user.uid) { toast("You can't bid on your own listing!", "error"); return; }
+    if (activeBidItem.highBidder === user.uid) { toast("You're already the highest bidder!", "error"); return; }
+    // If bid meets or exceeds buyout price, force a buyout instead
+    if (activeBidItem.buyoutPrice && bid >= activeBidItem.buyoutPrice) {
+      toast(`Your bid meets the buyout price. Use the Buyout button to purchase instantly.`, "error");
+      return;
+    }
+    await db.ref(`listings/${activeBidKey}`).update({ currentBid: bid, highBidder: user.uid, highBidderName: user.displayName });
+    toast(`Bid of ${usd(bid)} placed!`, "success");
+    closeBidModal();
+  }
+
+  async function confirmBuyout(user) {
+    if (!activeBidItem || !activeBidItem.buyoutPrice) return;
+    if (activeBidItem.sellerId === user.uid) { toast("You can't buy your own listing!", "error"); return; }
+    await db.ref(`listings/${activeBidKey}`).update({
+      sold: true, buyerId: user.uid, buyerName: user.displayName,
+      soldAt: firebase.database.ServerValue.TIMESTAMP,
+      currentBid: activeBidItem.buyoutPrice
+    });
+    await createConversation(activeBidKey, activeBidItem, user);
+    toast(`Buyout complete! "${activeBidItem.title}" is yours. Message the seller in your profile.`, "success");
+    closeBidModal();
+  }
+
+  async function createConversation(listingKey, item, buyer) {
+    const convId = [buyer.uid, item.sellerId].sort().join("_") + "_" + listingKey;
+    await db.ref(`conversations/${convId}`).update({
+      listingKey,
+      listingTitle: item.title,
+      participants: { [buyer.uid]: true, [item.sellerId]: true },
+      buyerId:   buyer.uid,
+      buyerName: buyer.displayName,
+      sellerId:  item.sellerId,
+      sellerName: item.sellerName || item.userName,
+      createdAt: firebase.database.ServerValue.TIMESTAMP,
+      lastMessage: "Sale completed — start your conversation!",
+      lastAt: firebase.database.ServerValue.TIMESTAMP
+    });
+  }
+</script>
+</body>
+</html>

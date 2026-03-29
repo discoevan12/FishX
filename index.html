@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>FishX — Fresh Off the Catch</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <link rel="stylesheet" href="css/landing.css"/>
+</head>
+<body>
+
+<!-- ═══ NAV ═══════════════════════════════════════════════════ -->
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="FishX logo"/>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="market.html">Market</a>
+  </div>
+  <div class="nav-right">
+    <a class="btn btn-ghost btn-sm" href="login.html">Sign In</a>
+    <a class="btn btn-primary btn-sm" href="login.html">Get Started</a>
+  </div>
+</nav>
+
+<!-- ═══ HERO ══════════════════════════════════════════════════ -->
+<section class="hero">
+  <div class="hero-bg">
+    <div class="hero-grid"></div>
+    <div class="hero-glow"></div>
+  </div>
+  <div class="container hero-content">
+    <div class="hero-eyebrow">
+      <span class="badge badge-blue">Now Live</span>
+    </div>
+    <h1 class="hero-title">
+      THE MARKET FOR<br/>
+      <span class="hero-title-blue">RARE CATCHES</span>
+    </h1>
+    <p class="hero-sub">
+      Buy, sell, and auction trophy fish — direct from the dock.<br/>
+      Real-time bids. Trusted sellers. Fresh Off the Catch.
+    </p>
+    <div class="hero-cta">
+      <a class="btn btn-primary btn-lg" href="login.html">Start Selling</a>
+      <a class="btn btn-ghost btn-lg" href="market.html">Browse Market →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-num">Live</span>
+        <span class="hero-stat-label">Auctions</span>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">Real-time</span>
+        <span class="hero-stat-label">Bids</span>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">Trusted</span>
+        <span class="hero-stat-label">Sellers</span>
+      </div>
+    </div>
+  </div>
+  <!-- Hero logo display -->
+  <div class="hero-logo-display">
+    <img src="assets/logo.png" alt="FishX" class="hero-logo-img"/>
+  </div>
+</section>
+
+<!-- ═══ HOW IT WORKS ══════════════════════════════════════════ -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Simple as casting a line</p>
+      <h2>HOW IT <span class="text-blue">WORKS</span></h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">📸</div>
+        <h3>Snap It</h3>
+        <p>Take photos of your catch from multiple angles and upload them straight to your listing.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">📋</div>
+        <h3>List It</h3>
+        <p>Add your species, description, and set a flat price or start an auction with a custom duration.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">🔨</div>
+        <h3>Bid or Buy</h3>
+        <p>Real-time bids powered by Firebase — watch offers roll in or grab it instantly at the buyout price.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon">🤝</div>
+        <h3>Confirm &amp; Close</h3>
+        <p>Both buyer and seller confirm the handoff in the built-in messaging thread. Safe, simple, done.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FEATURES ══════════════════════════════════════════════ -->
+<section class="section section-dark" id="features">
+  <div class="container">
+    <div class="section-header">
+      <p class="section-eyebrow">Everything a fisher needs</p>
+      <h2>BUILT FOR <span class="text-blue">FISHERMEN</span></h2>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card feature-large">
+        <div class="feature-icon-lg">🤝</div>
+        <h3>Verified Sale Confirmations</h3>
+        <p>Once a sale closes, both the buyer and seller confirm the handoff inside the conversation thread. Fish delivered, money sent — both parties confirm and the sale is marked complete.</p>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+          <span style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80;padding:5px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;">✅ Seller confirmed</span>
+          <span style="background:rgba(34,197,94,0.15);border:1px solid rgba(34,197,94,0.3);color:#4ade80;padding:5px 12px;border-radius:20px;font-size:0.78rem;font-weight:700;">✅ Buyer confirmed</span>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔨</div>
+        <h3>Live Auctions</h3>
+        <p>Set a starting bid and duration. Watch real-time offers roll in, powered by Firebase Realtime Database.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💲</div>
+        <h3>Flat Pricing</h3>
+        <p>Know what it's worth? Set a fixed price and let buyers grab it instantly.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">👤</div>
+        <h3>Seller Profiles</h3>
+        <p>View any seller's full profile — sale history, experience, location, and sale rate — before you buy.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔐</div>
+        <h3>Google Auth</h3>
+        <p>One-click sign in with your Google account. Secure, fast, and no passwords.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ CTA BANNER ════════════════════════════════════════════ -->
+<section class="cta-banner">
+  <div class="container cta-content">
+    <div>
+      <h2>READY TO <span class="text-blue">REEL IN</span> SOME CASH?</h2>
+      <p class="text-muted">Join FishX and turn your trophy catches into real money.</p>
+    </div>
+    <a class="btn btn-primary btn-lg" href="login.html">Start For Free →</a>
+  </div>
+</section>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-brand">
+      <img src="assets/logo.png" alt="FishX" style="height:32px;"/>
+      <span class="footer-tagline">Fresh Off the Catch</span>
+    </div>
+    <div class="footer-links">
+      <a href="market.html">Market</a>
+      <a href="market.html">Market</a>
+      <a href="sell.html">Sell</a>
+      <a href="profile.html">Profile</a>
+    </div>
+    <p class="footer-copy">© 2025 FishX · Evan Fahey · Biruh Abaneh · Robert Gareev</p>
+  </div>
+</footer>
+
+<div id="toastContainer"></div>
+</body>
+</html>

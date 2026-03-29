@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Sell a Catch — FishX</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <link rel="stylesheet" href="css/sell.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="FishX"/>
+    <span class="nav-logo-text">FISH<span>X</span></span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="market.html">Market</a>
+    <a class="nav-link active" href="sell.html">Sell</a>
+    <a class="nav-link" href="messages.html">Messages</a>
+  </div>
+  <div class="nav-right">
+    <a href="profile.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <img class="nav-avatar" id="navAvatar" src="" alt="avatar" style="display:none;"/>
+      <span class="nav-username" id="navUsername"></span>
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<div class="page-wrap">
+  <div class="container-sm">
+    <div class="page-header">
+      <h2>LIST A CATCH <span class="text-blue">— GET IT SOLD</span></h2>
+      <p class="text-muted">Upload photos and fill in the details to list your catch on the market</p>
+    </div>
+    <div class="sell-layout">
+      <!-- LEFT: Upload -->
+      <div class="sell-left">
+        <div class="upload-zone" id="uploadZone">
+          <input type="file" id="fileInput" accept="image/*" multiple hidden/>
+          <div class="upload-idle" id="uploadIdle">
+            <div class="upload-icon">&#128247;</div>
+            <p class="upload-title">Drop fish photos here</p>
+            <p class="upload-hint">Multiple angles show off your catch</p>
+            <button class="btn btn-outline btn-sm" id="uploadTrigger">Choose Photos</button>
+          </div>
+          <div class="preview-strip" id="previewStrip"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Form -->
+      <div class="sell-right">
+        <div class="sell-form-card">
+          <div class="form-group">
+            <label class="form-label">Listing Type</label>
+            <div class="type-toggle">
+              <button class="type-btn active" data-type="flat">Flat Price</button>
+              <button class="type-btn" data-type="auction">Auction</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fishTitle">Catch Title</label>
+            <input class="form-input" id="fishTitle" type="text" placeholder="e.g. Trophy Atlantic Bluefin Tuna"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fishSpecies">Species</label>
+            <input class="form-input" id="fishSpecies" type="text" placeholder="e.g. Bluefin Tuna, Largemouth Bass…"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fishDesc">Description</label>
+            <textarea class="form-input" id="fishDesc" rows="3" placeholder="Where caught, weight, length, condition, story…"></textarea>
+          </div>
+
+          <!-- Flat price fields -->
+          <div id="flatFields">
+            <div class="form-group">
+              <label class="form-label" for="fishPrice">Price (USD) <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.78rem;color:var(--text-dim);">— max $1,000</span></label>
+              <input class="form-input" id="fishPrice" type="number" min="0.01" max="1000" step="0.01" placeholder="0.00"/>
+            </div>
+          </div>
+
+          <!-- Auction fields -->
+          <div id="auctionFields" class="hidden">
+            <div class="form-group">
+              <label class="form-label" for="startBid">Starting Bid (USD)</label>
+              <input class="form-input" id="startBid" type="number" min="0.01" step="0.01" placeholder="0.00"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="auctionDuration">Auction Duration</label>
+              <select class="form-input" id="auctionDuration">
+                <option value="1">1 hour</option>
+                <option value="3">3 hours</option>
+                <option value="6">6 hours</option>
+                <option value="12">12 hours</option>
+                <option value="24" selected>24 hours</option>
+                <option value="48">48 hours</option>
+                <option value="72">72 hours (3 days)</option>
+                <option value="120">5 days</option>
+                <option value="168">7 days</option>
+                <option value="custom">Custom…</option>
+              </select>
+            </div>
+            <div class="form-group hidden" id="customHoursGroup">
+              <label class="form-label" for="customHours">Custom Duration (hours)</label>
+              <input class="form-input" id="customHours" type="number" min="1" max="720" placeholder="e.g. 36"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label" style="display:flex;align-items:center;gap:10px;">
+                Buyout Price (USD)
+                <label style="display:flex;align-items:center;gap:6px;font-weight:400;text-transform:none;letter-spacing:0;font-size:0.8rem;cursor:pointer;">
+                  <input type="checkbox" id="autoBuyout" style="width:14px;height:14px;cursor:pointer;accent-color:var(--blue);"/>
+                  Auto-set (10x starting bid)
+                </label>
+              </label>
+              <input class="form-input" id="buyoutPrice" type="number" min="0.01" step="0.01" placeholder="Optional — leave blank for no buyout"/>
+              <p style="font-size:0.72rem;color:var(--text-dim);margin-top:5px;">Buyers can instantly end the auction at this price</p>
+            </div>
+          </div>
+
+          <!-- Upload progress -->
+          <div id="uploadProgress" class="hidden" style="margin-bottom:16px;">
+            <p style="font-size:0.82rem;color:var(--text-dim);margin-bottom:8px;">Uploading photo…</p>
+            <div style="height:4px;background:var(--gray-700);border-radius:99px;overflow:hidden;">
+              <div id="uploadProgressBar" style="height:100%;background:var(--blue);width:0%;transition:width 0.3s;border-radius:99px;"></div>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" id="submitBtn">List on FishX</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="toastContainer"></div>
+<script src="js/shared.js"></script>
+<script src="js/sell.js"></script>
+</body>
+</html>

@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>Messages — FishX</title>
+  <link rel="stylesheet" href="css/global.css"/>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</head>
+<body>
+<nav class="topnav">
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="FishX"/>
+    <span class="nav-logo-text">FISH<span>X</span></span>
+  </a>
+  <div class="nav-links">
+    <a class="nav-link" href="market.html">Market</a>
+    <a class="nav-link" href="sell.html">Sell</a>
+    <a class="nav-link" href="messages.html">Messages</a>
+  </div>
+  <div class="nav-right">
+    <a href="profile.html" style="display:flex;align-items:center;gap:8px;text-decoration:none;">
+      <img class="nav-avatar" id="navAvatar" src="" alt="avatar" style="display:none;"/>
+      <span class="nav-username" id="navUsername"></span>
+    </a>
+    <button class="btn btn-ghost btn-sm" onclick="signOut()">Sign Out</button>
+  </div>
+</nav>
+
+<!-- DM notification banner -->
+<div id="dmBanner" style="display:none;"></div>
+
+<div class="page-wrap">
+  <div class="container" style="max-width:1000px;">
+    <div class="page-header">
+      <h2>MESSAGES <span class="text-blue" id="msgHeadingBadge">— CONVERSATIONS</span></h2>
+      <p class="text-muted">Chat with buyers and sellers after a sale</p>
+    </div>
+    <div class="msg-layout" id="msgLayout">
+      <!-- Thread list -->
+      <div class="msg-sidebar" id="msgSidebar">
+        <div style="display:flex;align-items:center;justify-content:center;padding:40px;">
+          <div class="spinner"></div>
+        </div>
+      </div>
+      <!-- Chat area -->
+      <div class="msg-chat" id="msgChat">
+        <div class="msg-chat-empty">
+          <div style="font-size:3rem;margin-bottom:16px;">&#128172;</div>
+          <p style="color:var(--text-dim);">Select a conversation to start chatting</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+<style>
+/* DM notification banner */
+#dmBanner {
+  position: fixed;
+  top: calc(var(--nav-h) + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8000;
+  background: var(--blue);
+  color: #fff;
+  padding: 12px 24px;
+  border-radius: var(--r-full);
+  font-weight: 700;
+  font-size: 0.92rem;
+  box-shadow: 0 4px 24px rgba(24,119,242,0.55);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  animation: riseUp 0.4s var(--bounce);
+  white-space: nowrap;
+}
+#dmBanner:hover { background: var(--blue-light); }
+#dmBanner .dm-banner-close {
+  margin-left: 8px;
+  opacity: 0.7;
+  font-size: 1rem;
+  line-height: 1;
+}
+#dmBanner .dm-banner-close:hover { opacity: 1; }
+
+.msg-layout { display:grid; grid-template-columns:300px 1fr; gap:0; background:var(--gray-900); border:1px solid var(--border); border-radius:var(--r-xl); overflow:hidden; min-height:600px; }
+@media(max-width:700px){ .msg-layout{ grid-template-columns:1fr; } .msg-chat{ display:none; } .msg-layout.chat-open .msg-chat{ display:flex; } .msg-layout.chat-open .msg-sidebar{ display:none; } }
+.msg-sidebar { border-right:1px solid var(--border); overflow-y:auto; }
+.msg-thread { padding:14px 16px; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; position:relative; }
+.msg-thread:hover { background:var(--gray-800); }
+.msg-thread.active { background:var(--blue-dim); border-right:3px solid var(--blue); }
+.msg-thread.unread { background: rgba(24,119,242,0.08); }
+.msg-thread-title { font-weight:600; font-size:0.9rem; margin-bottom:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-thread-title.bold { color:#fff; font-weight:800; }
+.msg-thread-preview { font-size:0.78rem; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.msg-thread-meta { font-size:0.7rem; color:var(--text-dim); margin-bottom:4px; }
+.unread-dot { width:9px; height:9px; border-radius:50%; background:var(--blue); box-shadow: 0 0 8px rgba(24,119,242,0.8); flex-shrink:0; margin-top:3px; }
+.msg-chat { display:flex; flex-direction:column; }
+.msg-chat-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; flex:1; text-align:center; padding:40px; }
+.msg-chat-header { padding:16px 20px; border-bottom:1px solid var(--border); background:var(--gray-800); }
+.msg-chat-header h4 { font-family:var(--font-display); font-size:1.1rem; margin-bottom:2px; }
+.msg-messages { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:10px; }
+.msg-bubble { max-width:72%; padding:10px 14px; border-radius:16px; font-size:0.88rem; line-height:1.5; word-break:break-word; }
+.msg-bubble.mine { background:var(--blue); color:#fff; align-self:flex-end; border-bottom-right-radius:4px; }
+.msg-bubble.theirs { background:var(--gray-800); color:var(--text); align-self:flex-start; border-bottom-left-radius:4px; border:1px solid var(--border); }
+.msg-bubble-name { font-size:0.68rem; color:var(--text-dim); margin-bottom:4px; }
+.msg-bubble-time { font-size:0.65rem; opacity:0.65; margin-top:4px; text-align:right; }
+.msg-input-area { padding:16px 20px; border-top:1px solid var(--border); display:flex; gap:10px; background:var(--gray-800); }
+.msg-input-area input { flex:1; background:var(--gray-900); border:1px solid var(--border); border-radius:var(--r-full); padding:10px 16px; color:var(--white); font-size:0.9rem; transition:border-color 0.15s; }
+.msg-input-area input:focus { border-color:var(--blue); outline:none; }
+.msg-send-btn { width:42px;height:42px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;transition:all 0.15s;flex-shrink:0; }
+.msg-send-btn:hover { background:var(--blue-light); transform:scale(1.05); }
+.msg-system { text-align:center;color:var(--text-dim);font-size:0.82rem;padding:16px;background:rgba(255,255,255,0.03);border-radius:var(--r-md);margin:8px 0; }
+
+/* Sale confirmation banner */
+.confirm-bar { padding:14px 20px; border-top:1px solid var(--border); background:var(--gray-900); }
+.confirm-bar-inner { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px 18px; }
+.confirm-bar-inner.pending { border-color:rgba(245,158,11,0.4); background:rgba(245,158,11,0.05); }
+.confirm-bar-inner.complete { border-color:rgba(34,197,94,0.4); background:rgba(34,197,94,0.06); }
+.confirm-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.confirm-check { display:flex; align-items:center; gap:6px; font-size:0.8rem; }
+.confirm-dot { width:10px; height:10px; border-radius:50%; background:var(--border); flex-shrink:0; }
+.confirm-dot.done { background:var(--green); box-shadow:0 0 6px rgba(34,197,94,0.6); }
+</style>
+<script src="js/shared.js"></script>
+<script>
+  let activeConvId   = null;
+  let msgListener    = null;
+  let convListener   = null;  // tracks per-conversation confirm bar listener
+  let convRef        = null;
+  let convHandler    = null;
+  const params       = new URLSearchParams(location.search);
+  const preselect    = params.get("conv");
+
+  requireAuth(initMessages);
+
+  function initMessages(user) {
+    // Detach old listener if re-entering
+    if (convRef && convHandler) convRef.off("value", convHandler);
+
+    convRef = db.ref("conversations");
+    convHandler = convRef.on("value", snap => {
+      const convs = [];
+      snap.forEach(c => {
+        const v = c.val();
+        // Filter client-side for participation (avoids needing a composite index)
+        if (v && v.participants && v.participants[user.uid] === true) {
+          convs.push({ id: c.key, ...v });
+        }
+      });
+      convs.sort((a, b) => (b.lastAt || 0) - (a.lastAt || 0));
+
+      const unreadConvs = convs.filter(c =>
+        c.lastSenderId && c.lastSenderId !== user.uid && !c[`readBy_${user.uid}`]
+      );
+
+      updateUnreadBanner(unreadConvs.length, user, convs);
+      updateNavBadge(unreadConvs.length);
+      renderSidebar(user, convs);
+
+      if (preselect) {
+        const target = convs.find(c => c.id === preselect);
+        if (target && activeConvId !== preselect) openConversation(user, preselect, target);
+      }
+    });
+  }
+
+  /* ── Unread banner ─────────────────────────────────────────── */
+  function updateUnreadBanner(count, user, convs) {
+    const banner = document.getElementById("dmBanner");
+    if (count === 0) { banner.style.display = "none"; return; }
+
+    banner.style.display = "flex";
+    banner.innerHTML = `
+      <span style="font-size:1.15rem;">💬</span>
+      <span>${count} unread message${count > 1 ? "s" : ""} — click to open</span>
+      <span class="dm-banner-close" id="dmBannerClose">✕</span>
+    `;
+    banner.onclick = (e) => {
+      if (e.target.id === "dmBannerClose") { banner.style.display = "none"; return; }
+      const first = convs.find(c =>
+        c.lastSenderId && c.lastSenderId !== user.uid && !c[`readBy_${user.uid}`]
+      );
+      if (first) {
+        openConversation(user, first.id, first);
+        // Highlight thread in sidebar
+        document.querySelectorAll(".msg-thread").forEach(t => {
+          t.classList.toggle("active", t.dataset.convId === first.id);
+        });
+      }
+      banner.style.display = "none";
+    };
+  }
+
+  function updateNavBadge(count) {
+    const heading = document.getElementById("msgHeadingBadge");
+    if (!heading) return;
+    if (count > 0) {
+      heading.innerHTML = `— <span style="background:var(--blue);color:#fff;padding:2px 10px;border-radius:var(--r-full);font-size:0.75em;vertical-align:middle;">${count} NEW</span>`;
+    } else {
+      heading.textContent = "— CONVERSATIONS";
+    }
+  }
+
+  /* ── Sidebar ───────────────────────────────────────────────── */
+  function renderSidebar(user, convs) {
+    const sidebar = document.getElementById("msgSidebar");
+    if (!convs.length) {
+      sidebar.innerHTML = `
+        <div style="padding:40px 20px;text-align:center;color:var(--text-dim);">
+          <div style="font-size:2.5rem;margin-bottom:12px;">&#128172;</div>
+          <p style="font-size:0.88rem;">No conversations yet.<br/>Buy or sell a listing to start chatting.</p>
+        </div>`;
+      return;
+    }
+
+    // Remember scroll
+    const scrollTop = sidebar.scrollTop;
+    sidebar.innerHTML = "";
+
+    convs.forEach(conv => {
+      const isMe     = conv.buyerId === user.uid;
+      const otherName = isMe ? (conv.sellerName || "Seller") : (conv.buyerName || "Buyer");
+      const isUnread  = conv.lastSenderId && conv.lastSenderId !== user.uid && !conv[`readBy_${user.uid}`];
+      const isActive  = conv.id === activeConvId;
+
+      const div = document.createElement("div");
+      div.className = "msg-thread" + (isActive ? " active" : "") + (isUnread ? " unread" : "");
+      div.dataset.convId = conv.id;
+
+      div.innerHTML = `
+        <div style="display:flex;align-items:flex-start;gap:8px;">
+          ${isUnread ? `<div class="unread-dot" style="margin-top:4px;"></div>` : `<div style="width:9px;flex-shrink:0;"></div>`}
+          <div style="min-width:0;flex:1;">
+            <div class="msg-thread-title${isUnread ? " bold" : ""}">
+              Re: ${escHtml(conv.listingTitle || "Unnamed listing")}
+            </div>
+            <div class="msg-thread-meta">With ${escHtml(otherName)} &nbsp;·&nbsp; ${isMe ? "You bought" : "You sold"}</div>
+            <div class="msg-thread-preview">${escHtml(conv.lastMessage || "…")}</div>
+          </div>
+        </div>`;
+
+      div.addEventListener("click", () => {
+        document.querySelectorAll(".msg-thread").forEach(t => t.classList.remove("active"));
+        div.classList.add("active");
+        div.classList.remove("unread");
+        openConversation(user, conv.id, conv);
+        document.getElementById("msgLayout").classList.add("chat-open");
+      });
+      sidebar.appendChild(div);
+    });
+
+    sidebar.scrollTop = scrollTop;
+  }
+
+  /* ── Open conversation ─────────────────────────────────────── */
+  function openConversation(user, convId, conv) {
+    activeConvId = convId;
+    if (msgListener) { msgListener(); msgListener = null; }
+    if (convListener) { convListener(); convListener = null; }
+
+    // Mark as read immediately
+    db.ref(`conversations/${convId}`).update({ [`readBy_${user.uid}`]: true });
+
+    const chat      = document.getElementById("msgChat");
+    const isMe      = conv.buyerId === user.uid;
+    const otherName = isMe ? (conv.sellerName || "Seller") : (conv.buyerName || "Buyer");
+
+    chat.innerHTML = `
+      <div class="msg-chat-header">
+        <h4>${escHtml(conv.listingTitle || "Listing")}</h4>
+        <p style="font-size:0.8rem;color:var(--text-dim);">
+          Chat with <strong>${escHtml(otherName)}</strong>
+          &nbsp;·&nbsp;
+          <a href="listing.html?key=${conv.listingKey}" style="color:var(--blue-light);">View listing ↗</a>
+        </p>
+      </div>
+      <div class="msg-messages" id="msgMessages">
+        <div style="display:flex;justify-content:center;padding:20px;"><div class="spinner"></div></div>
+      </div>
+      <div id="confirmBar"></div>
+      <div class="msg-input-area">
+        <input id="msgInput" type="text" placeholder="Message ${escHtml(otherName)}…" maxlength="500" autocomplete="off"/>
+        <button class="msg-send-btn" id="msgSendBtn" title="Send">&#10148;</button>
+      </div>`;
+
+    // Render confirmation bar (live-updating), tracked so we can detach later
+    const confirmRef = db.ref(`conversations/${convId}`);
+    const confirmHandler = confirmRef.on("value", convSnap => {
+      const convData = convSnap.val();
+      if (convData) renderConfirmBar(convId, convData, user, isMe);
+    });
+    convListener = () => confirmRef.off("value", confirmHandler);
+
+    const input = document.getElementById("msgInput");
+    input.focus();
+    input.addEventListener("keydown", e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(user, convId, conv, otherName); } });
+    document.getElementById("msgSendBtn").addEventListener("click", () => sendMessage(user, convId, conv, otherName));
+
+    // Real-time messages listener
+    const msgRef = db.ref(`messages/${convId}`).orderByChild("sentAt").limitToLast(150);
+    const handler = msgRef.on("value", snap => {
+      const container = document.getElementById("msgMessages");
+      if (!container) return;
+
+      const msgs = [];
+      snap.forEach(c => { const v = c.val(); if (v) msgs.push({ id: c.key, ...v }); });
+
+      const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+      container.innerHTML = "";
+
+      if (!msgs.length) {
+        container.innerHTML = `<div class="msg-system">🎣 Sale completed! Say hello to kick off the conversation.</div>`;
+        return;
+      }
+
+      msgs.forEach((m, i) => {
+        const isSystem = m.isSystem || m.senderId === "__system__";
+        const mine = m.senderId === user.uid;
+
+        // Date separator
+        if (i === 0 || !sameDay(msgs[i-1].sentAt, m.sentAt)) {
+          const sep = document.createElement("div");
+          sep.style.cssText = "text-align:center;font-size:0.7rem;color:var(--text-dim);margin:8px 0;";
+          sep.textContent = formatDay(m.sentAt);
+          container.appendChild(sep);
+        }
+
+        // System messages render as centered banners
+        if (isSystem) {
+          const sys = document.createElement("div");
+          sys.className = "msg-system";
+          sys.textContent = m.text || "";
+          container.appendChild(sys);
+          return;
+        }
+
+        const wrapper = document.createElement("div");
+        wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${mine ? "flex-end" : "flex-start"};`;
+
+        if (!mine) {
+          const nameEl = document.createElement("div");
+          nameEl.className = "msg-bubble-name";
+          nameEl.textContent = m.senderName || otherName;
+          wrapper.appendChild(nameEl);
+        }
+
+        const bubble = document.createElement("div");
+        bubble.className = `msg-bubble ${mine ? "mine" : "theirs"}`;
+
+        const textNode = document.createTextNode(m.text || "");
+        bubble.appendChild(textNode);
+
+        const timeEl = document.createElement("div");
+        timeEl.className = "msg-bubble-time";
+        timeEl.textContent = relTime(m.sentAt || Date.now());
+        bubble.appendChild(timeEl);
+
+        wrapper.appendChild(bubble);
+        container.appendChild(wrapper);
+      });
+
+      if (wasAtBottom) container.scrollTop = container.scrollHeight;
+    });
+
+    msgListener = () => msgRef.off("value", handler);
+  }
+
+  /* ── Send message ──────────────────────────────────────────── */
+  async function sendMessage(user, convId, conv, otherName) {
+    const input = document.getElementById("msgInput");
+    const text  = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    input.focus();
+
+    const profSnap = await db.ref(`users/${user.uid}/username`).once("value");
+    const username = profSnap.val() || user.displayName || "Fisher";
+
+    const isMe    = conv.buyerId === user.uid;
+    const otherId = isMe ? conv.sellerId : conv.buyerId;
+
+    await db.ref(`messages/${convId}`).push({
+      senderId: user.uid,
+      senderName: username,
+      text,
+      sentAt: firebase.database.ServerValue.TIMESTAMP
+    });
+
+    await db.ref(`conversations/${convId}`).update({
+      lastMessage:  text.slice(0, 80),
+      lastAt:       firebase.database.ServerValue.TIMESTAMP,
+      lastSenderId: user.uid,
+      [`readBy_${user.uid}`]: true,
+      [`readBy_${otherId}`]:  false
+    });
+  }
+
+  /* ── Sale Confirmation Bar ────────────────────────────────── */
+  function renderConfirmBar(convId, conv, user, isBuyer) {
+    const bar = document.getElementById("confirmBar");
+    if (!bar) return;
+
+    const sellerConfirmed = !!conv.sellerConfirmed;
+    const buyerConfirmed  = !!conv.buyerConfirmed;
+    const bothDone        = sellerConfirmed && buyerConfirmed;
+    const myConfirmed     = isBuyer ? buyerConfirmed : sellerConfirmed;
+
+    if (bothDone) {
+      // Lock the input area
+      const inputArea = document.querySelector(".msg-input-area");
+      if (inputArea) {
+        inputArea.innerHTML = `
+          <div style="flex:1;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px 0;color:var(--text-dim);font-size:0.85rem;">
+            <span style="font-size:1.1rem;">🔒</span>
+            <span>This sale is complete — chat is now closed.</span>
+          </div>`;
+      }
+
+      bar.innerHTML = `
+        <div class="confirm-bar">
+          <div class="confirm-bar-inner complete">
+            <div class="confirm-row">
+              <span style="font-size:1.2rem;">🎉</span>
+              <div style="flex:1;">
+                <p style="font-weight:700;font-size:0.88rem;color:var(--green);margin-bottom:2px;">Sale Complete!</p>
+                <p style="font-size:0.76rem;color:var(--text-dim);">Both parties confirmed — fish delivered & payment sent.</p>
+              </div>
+              <div style="display:flex;gap:12px;">
+                <div class="confirm-check"><div class="confirm-dot done"></div><span>Seller</span></div>
+                <div class="confirm-check"><div class="confirm-dot done"></div><span>Buyer</span></div>
+              </div>
+            </div>
+          </div>
+        </div>`;
+      return;
+    }
+
+    const sellerLabel = conv.sellerName || "Seller";
+    const buyerLabel  = conv.buyerName  || "Buyer";
+    const myRole      = isBuyer ? "buyer" : "seller";
+    const myPrompt    = isBuyer
+      ? "Confirm you've received the fish and sent payment"
+      : "Confirm you've sent the fish and received payment";
+
+    bar.innerHTML = `
+      <div class="confirm-bar">
+        <div class="confirm-bar-inner pending">
+          <p style="font-size:0.76rem;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--gold);margin-bottom:10px;">⚡ Confirm Sale Completion</p>
+          <div class="confirm-row" style="margin-bottom:12px;">
+            <div class="confirm-check">
+              <div class="confirm-dot ${sellerConfirmed ? 'done' : ''}"></div>
+              <span style="font-size:0.8rem;color:${sellerConfirmed ? 'var(--green)' : 'var(--text-dim)'};">${escHtml(sellerLabel)} ${sellerConfirmed ? '✓' : '(pending)'}</span>
+            </div>
+            <div style="width:1px;height:14px;background:var(--border);margin:0 4px;"></div>
+            <div class="confirm-check">
+              <div class="confirm-dot ${buyerConfirmed ? 'done' : ''}"></div>
+              <span style="font-size:0.8rem;color:${buyerConfirmed ? 'var(--green)' : 'var(--text-dim)'};">${escHtml(buyerLabel)} ${buyerConfirmed ? '✓' : '(pending)'}</span>
+            </div>
+          </div>
+          ${!myConfirmed ? `
+            <p style="font-size:0.79rem;color:var(--text-muted);margin-bottom:10px;">${myPrompt}:</p>
+            <button class="btn btn-primary btn-sm" id="confirmSaleBtn" style="font-size:0.82rem;">
+              ✅ I confirm — my end is done
+            </button>` : `
+            <p style="font-size:0.8rem;color:var(--green);">✓ You've confirmed. Waiting for the other party…</p>`}
+        </div>
+      </div>`;
+
+    if (!myConfirmed) {
+      document.getElementById("confirmSaleBtn").addEventListener("click", async () => {
+        const field = isBuyer ? "buyerConfirmed" : "sellerConfirmed";
+        await db.ref(`conversations/${convId}`).update({ [field]: true });
+        // Post a system message
+        const myName = conv[isBuyer ? "buyerName" : "sellerName"] || (isBuyer ? "Buyer" : "Seller");
+        await db.ref(`messages/${convId}`).push({
+          senderId:   "__system__",
+          senderName: "FishX",
+          text:       `✅ ${myName} (${myRole}) has confirmed their side of the sale.`,
+          sentAt:     firebase.database.ServerValue.TIMESTAMP,
+          isSystem:   true
+        });
+        // If both confirmed now, post completion message
+        const snap = await db.ref(`conversations/${convId}`).once("value");
+        const updated = snap.val();
+        if (updated.sellerConfirmed && updated.buyerConfirmed) {
+          await db.ref(`messages/${convId}`).push({
+            senderId:   "__system__",
+            senderName: "FishX",
+            text:       "🎉 Both parties confirmed! Sale is complete. Thanks for using FishX!",
+            sentAt:     firebase.database.ServerValue.TIMESTAMP,
+            isSystem:   true
+          });
+        }
+        toast("Confirmation saved!", "success");
+      });
+    }
+  }
+
+  /* ── Helpers ───────────────────────────────────────────────── */
+  function escHtml(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function sameDay(ts1, ts2) {
+    if (!ts1 || !ts2) return false;
+    const a = new Date(ts1), b = new Date(ts2);
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+
+  function formatDay(ts) {
+    if (!ts) return "";
+    const d = new Date(ts);
+    const today = new Date();
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    if (sameDay(ts, today.getTime())) return "Today";
+    if (sameDay(ts, yesterday.getTime())) return "Yesterday";
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+</script>
+</body>
+</html>
