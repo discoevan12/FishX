@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════════
+   profile.css
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Profile header ──────────────────────────────────── */
+.profile-header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 32px;
+  padding: 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  animation: riseUp 0.4s var(--bounce) both;
+}
+@media (max-width: 600px) {
+  .profile-header { flex-direction: column; text-align: center; }
+}
+
+.profile-avatar-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+.profile-avatar {
+  width: 80px; height: 80px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid var(--blue);
+  position: relative; z-index: 1;
+}
+.profile-avatar-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 2px solid var(--border-blue);
+  animation: pulse 2.5s ease-in-out infinite;
+}
+
+.profile-info { flex: 1; }
+.profile-info h2 { font-size: 1.8rem; margin-bottom: 4px; }
+.profile-badges { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+
+/* ── Stats bar ────────────────────────────────────────── */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 20px 32px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  animation: riseUp 0.4s 0.05s var(--bounce) both;
+}
+.stat-item {
+  flex: 1;
+  min-width: 100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 0;
+}
+.stat-val {
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--blue-light);
+  letter-spacing: 0.02em;
+}
+.stat-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+}
+.stat-div {
+  width: 1px; height: 40px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+/* ── Edit form ────────────────────────────────────────── */
+.edit-form {
+  margin-bottom: 24px;
+  animation: riseUp 0.3s var(--bounce) both;
+}
+.edit-form-inner {
+  background: var(--surface);
+  border: 1px solid var(--border-blue);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  max-width: 440px;
+}
+
+/* ── Profile tabs ─────────────────────────────────────── */
+.profile-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0;
+}
+.ptab {
+  padding: 10px 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  transition: all 0.15s;
+}
+.ptab:hover { color: var(--white); }
+.ptab.active { color: var(--blue-light); border-bottom-color: var(--blue); }

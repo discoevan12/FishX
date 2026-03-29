@@ -1,0 +1,126 @@
+/* ═══════════════════════════════════════════════════════════════
+   sell.css
+   ═══════════════════════════════════════════════════════════════ */
+
+.sell-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 28px;
+  align-items: start;
+}
+@media (max-width: 760px) { .sell-layout { grid-template-columns: 1fr; } }
+
+/* ── Upload zone ───────────────────────────────────────── */
+.upload-zone {
+  border: 2px dashed var(--border);
+  border-radius: var(--r-lg);
+  padding: 32px 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.upload-zone:hover, .upload-zone.drag-over {
+  border-color: var(--blue);
+  background: var(--blue-dim);
+}
+.upload-icon  { font-size: 2.8rem; }
+.upload-title { font-family: var(--font-display); font-size: 1rem; font-weight: 700; }
+.upload-hint  { font-size: 0.78rem; color: var(--text-dim); }
+
+.preview-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+.preview-thumb {
+  width: 68px; height: 68px;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 2px solid var(--border-blue);
+  animation: riseUp 0.25s var(--bounce) both;
+}
+
+/* ── Grade panel ───────────────────────────────────────── */
+.grade-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 24px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.grade-badge-lg {
+  font-family: var(--font-display);
+  font-size: 2.8rem;
+  font-weight: 900;
+  width: 72px; height: 72px;
+  border-radius: var(--r-md);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, var(--gold), var(--orange));
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.35);
+}
+
+.grade-result-state { width: 100%; text-align: left; }
+.grade-species-name { font-family: var(--font-display); font-size: 1.1rem; font-weight: 700; }
+.grade-suggest {
+  margin-top: 12px;
+  padding: 10px 14px;
+  background: rgba(34,197,94,0.1);
+  border: 1px solid rgba(34,197,94,0.25);
+  border-radius: var(--r-md);
+  font-size: 0.88rem;
+  color: var(--green);
+  font-weight: 600;
+}
+.grade-reason {
+  margin-top: 10px;
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+/* ── Form card ─────────────────────────────────────────── */
+.sell-form-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 28px;
+}
+
+/* ── Type toggle ───────────────────────────────────────── */
+.type-toggle {
+  display: flex;
+  gap: 8px;
+}
+.type-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  font-size: 0.88rem;
+  font-weight: 600;
+  border: 1.5px solid var(--border);
+  color: var(--text-dim);
+  background: rgba(255,255,255,0.03);
+  transition: all 0.15s;
+}
+.type-btn.active {
+  border-color: var(--blue);
+  color: var(--blue-light);
+  background: var(--blue-dim);
+}
+.type-btn:hover:not(.active) { color: var(--white); border-color: rgba(255,255,255,0.2); }
