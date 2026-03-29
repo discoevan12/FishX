@@ -1,7 +1,7 @@
 # 🐟 FishX — *Fresh Off the Catch*
-> StockX, but for fish. AI-graded catches, live auctions, social flex.
+> StockX, but for fish. Quick sells, live auctions, social flex.
 
-**Team:** Evan Fahey · Biruh Abaneh · Robert Gareev
+**Team:** Evan Fahey · Biruh Abaneh · Robert Gareev · Maraki Mulualem
 
 ---
 
