@@ -33,29 +33,6 @@ fishx2/
     └── sell.js       ← Sell page logic
 ```
 
----
-
-## ⚙️ Setup
-
-### Firebase (already configured ✅)
-Your Firebase project `fishx-8723f` is wired in. Make sure these are enabled in your Firebase console:
-- **Authentication → Sign-in method → Google** ✅
-- **Realtime Database** → set rules:
-```json
-{ "rules": { ".read": "auth != null", ".write": "auth != null" } }
-```
-
-### Gemini API (one step left)
-1. Get a key at https://aistudio.google.com/app/apikey
-2. Open `js/shared.js`
-3. Replace `"YOUR_GEMINI_API_KEY"` with your actual key
-
----
-
-## 🚀 Run
-Open `index.html` in a browser or use VS Code Live Server. No build step needed.
-
----
 
 ## 🎨 Theme
 - **Colors:** FishX Blue `#1877F2` + pure black `#0A0A0A`
